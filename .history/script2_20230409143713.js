@@ -94,12 +94,12 @@ class Autocomplete {
     }
 
     async makeRequest() {
+        this.removeList();
         this.showLoading();
 
         try {
             const request = await fetch(this.options.url + "?q=" + this.input.value);
             const json = await request.json();
-            this.removeList();
             this.createList(json);
         } catch (err) {
         } finally {
@@ -107,7 +107,7 @@ class Autocomplete {
         }
     }
 
-    checkInputValue() {
+    bindInputEvent() {
         if (this.input.value.length < 3) {
             this.hideList();
             return false;
@@ -130,7 +130,7 @@ class Autocomplete {
     }
 
     bindEvents() {
-        const tHandler = debounced(200, this.checkInputValue.bind(this));
+        const tHandler = debounced(200, this.bindInputEvent.bind(this));
         this.input.addEventListener("input", tHandler.bind(this));
 
         this.input.addEventListener("keydown", e => {
@@ -144,25 +144,21 @@ class Autocomplete {
                         this.selectIndex = 0;
                     }
                 }
-
                 if (e.key === "ArrowUp") {
                     this.showList();
                     this.selectIndex--;
                     if (this.selectIndex < 0) {
                         this.selectIndex = max - 1;
                     }
+                    //TODO przewijac do listy
                 }
 
                 const current = this.list.children[this.selectIndex];
-                if (current) {
-                    if (current.offsetTop < this.list.scrollTop) {
-                        this.list.scrollTop = current.offsetTop
-                    }
 
-                    if (current.offsetTop + current.offsetHeight > this.list.scrollTop + this.list.offsetHeight) {
-                        this.list.scrollTop = current.offsetTop + current.offsetHeight - this.list.offsetHeight
-                    }
+                if (current.offsetTop < this.list.scrollTop || current.offsetTop + current.offsetHeight > this.list.scrollTop + this.list.offsetHeight) {
+                    this.list.scrollTop = current.offsetTop
                 }
+
 
                 if (e.key === "Enter") {
                     this.selectActive(this.input, this.list.children[this.selectIndex]);
@@ -181,18 +177,17 @@ class Autocomplete {
 
         this.cnt.addEventListener("click", e => {
             const el = e.target.closest(".autocomplete-list-el");
-            console.log(this.list);
             if (el) {
                 const index = [...this.list.children].indexOf(el);
                 this.selectIndex = index;
                 this.markActive();
                 this.selectActive(this.input, this.list.children[this.selectIndex]);
+                this.hideList();
+            } else {
+                this.hideList();
             }
         })
 
-        document.addEventListener("click", e => {
-            this.hideList();
-        })
     }
 }
 

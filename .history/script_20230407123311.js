@@ -16,8 +16,7 @@ class Autocomplete {
         this.input = input;
         this.selectIndex = -1;
         this.options = {...{
-            url : "",
-            val : null
+            url : ""
         }, ...options};
         this.makeHTML();
         this.bindEvents();
@@ -26,7 +25,6 @@ class Autocomplete {
     makeHTML() {
         const cnt = document.createElement("div");
         cnt.classList.add("autocomplete");
-
         this.cnt = cnt;
         this.input.after(cnt);
         cnt.append(this.input);
@@ -37,30 +35,27 @@ class Autocomplete {
         this.input.after(div);
     }
 
-    renderElement(inputValue, data) {
-        let val = inputValue.toUpperCase();
-        let temp = data.toUpperCase();
-        let indexStart = temp.indexOf(val);
-        let indexEnd = indexStart + inputValue.length;
-        let part1 = data.substring(0, indexStart);
-        let part2 = data.substring(indexStart, indexEnd);
-        let part3 = data.substring(indexEnd);
-
-        return `${part1}<b>${part2}</b>${part3}`;
-    }
-
     createList(data) {
         this.removeList();
-
         const list = document.createElement("ul");
         list.classList.add("autocomplete-list");
         this.div.append(list);
         this.list = list;
 
-        for (let jsonItem of data.suggestions) {
+        let val = this.input.value.toUpperCase();
+        for (let item of data) {
+            let temp = item.toUpperCase();
+            let indexStart = temp.indexOf(val);
+            let indexEnd = indexStart + val.length;
+            let part1 = item.substring(0, indexStart);
+            let part2 = item.substring(indexStart, indexEnd);
+            let part3 = item.substring(indexEnd);
+            console.log({item, part1, part2, part3});
             const li = document.createElement("li");
             li.classList.add("autocomplete-list-el");
-            li.innerHTML = this.renderElement(this.input.value, jsonItem);
+            console.log(indexStart, indexEnd);
+            li.innerHTML = `${part1}<b>${part2}</b>${part3}`;
+            this.hideList();
             this.list.append(li);
         }
     }
@@ -71,12 +66,12 @@ class Autocomplete {
     }
 
     showList() {
-        if (this.list) this.list.hidden = false;
+        this.list.hidden = false;
     }
 
     hideList() {
         this.selectIndex = -1;
-        if (this.list) this.list.hidden = true;
+        this.list.hidden = true;
     }
 
     showLoading() {
@@ -94,20 +89,16 @@ class Autocomplete {
     }
 
     async makeRequest() {
+        this.removeList();
         this.showLoading();
-
-        try {
-            const request = await fetch(this.options.url + "?q=" + this.input.value);
-            const json = await request.json();
-            this.removeList();
-            this.createList(json);
-        } catch (err) {
-        } finally {
-            this.hideLoading();
-        }
+        const request = await fetch(this.options.url + "?q=" + this.input.value);
+        const json = await request.json();
+        this.createList(json.suggestions);
+        this.showList();
+        this.hideLoading();
     }
 
-    checkInputValue() {
+    bindInputEvent() {
         if (this.input.value.length < 3) {
             this.hideList();
             return false;
@@ -125,15 +116,15 @@ class Autocomplete {
         }
     }
 
-    selectActive(input, selectedElement) {
-        input.value = this.list.children[this.selectIndex].innerText;
+    selectActive() {
+        this.input.value = this.list.children[this.selectIndex].innerText;
     }
 
     bindEvents() {
-        const tHandler = debounced(200, this.checkInputValue.bind(this));
+        const tHandler = debounced(200, this.bindInputEvent.bind(this));
         this.input.addEventListener("input", tHandler.bind(this));
 
-        this.input.addEventListener("keydown", e => {
+        document.addEventListener("keydown", e => {
             if (this.list) {
                 const max = this.list.children.length;
 
@@ -144,7 +135,6 @@ class Autocomplete {
                         this.selectIndex = 0;
                     }
                 }
-
                 if (e.key === "ArrowUp") {
                     this.showList();
                     this.selectIndex--;
@@ -152,24 +142,11 @@ class Autocomplete {
                         this.selectIndex = max - 1;
                     }
                 }
-
-                const current = this.list.children[this.selectIndex];
-                if (current) {
-                    if (current.offsetTop < this.list.scrollTop) {
-                        this.list.scrollTop = current.offsetTop
-                    }
-
-                    if (current.offsetTop + current.offsetHeight > this.list.scrollTop + this.list.offsetHeight) {
-                        this.list.scrollTop = current.offsetTop + current.offsetHeight - this.list.offsetHeight
-                    }
-                }
-
                 if (e.key === "Enter") {
-                    this.selectActive(this.input, this.list.children[this.selectIndex]);
+                    this.selectActive();
                     e.preventDefault();
                     this.hideList();
                 }
-
                 if (e.key === "Escape") {
                     e.preventDefault();
                     this.hideList();
@@ -179,40 +156,20 @@ class Autocomplete {
             }
         })
 
-        this.cnt.addEventListener("click", e => {
+        document.addEventListener("click", e => {
             const el = e.target.closest(".autocomplete-list-el");
-            console.log(this.list);
             if (el) {
                 const index = [...this.list.children].indexOf(el);
                 this.selectIndex = index;
                 this.markActive();
-                this.selectActive(this.input, this.list.children[this.selectIndex]);
+                this.selectActive();
+                this.hideList();
             }
         })
 
-        document.addEventListener("click", e => {
-            this.hideList();
-        })
     }
 }
 
-const auto1 = new Autocomplete(document.querySelector("#testCities"), {
-    url : "http://localhost:3333/cities"
+const auto = new Autocomplete(document.querySelector("input"), {
+    url : "http://localhost:3333"
 })
-
-const auto2 = new Autocomplete(document.querySelector("#testUsers"), {
-    url : "http://localhost:3333/users"
-})
-auto2.renderElement = function(inputValue, data) {
-    return `
-        <div class="autocomplete-list-user-item">
-            <div class="autocomplete-list-user-item-avatar"><img src="${data.avatar}" alt="" /></div>
-            <div class="autocomplete-list-user-item-name">${data.first_name} ${data.last_name}</div>
-            <div class="autocomplete-list-user-item-email">${data.email}</div>
-        </div>
-    `
-}
-auto2.selectActive = function(input, selectedElement) {
-    const name = selectedElement.querySelector(".autocomplete-list-user-item-name").innerText;
-    this.input.value = name;
-}

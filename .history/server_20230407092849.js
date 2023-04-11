@@ -1,7 +1,6 @@
 const express = require('express')
 const app = express()
 const fs = require('fs');
-const port = 3333
 const bodyParser = require('body-parser')
 const cors = require('cors')
 
@@ -30,6 +29,6 @@ app.get('/users', (req, res) => {
   res.send(JSON.stringify({suggestions : ret}));
 })
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
+const server = app.listen(0, () => {
+  console.log(`Example app listening on port ${server.address().port}`)
 })

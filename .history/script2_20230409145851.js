@@ -107,7 +107,7 @@ class Autocomplete {
         }
     }
 
-    checkInputValue() {
+    bindInputEvent() {
         if (this.input.value.length < 3) {
             this.hideList();
             return false;
@@ -130,7 +130,7 @@ class Autocomplete {
     }
 
     bindEvents() {
-        const tHandler = debounced(200, this.checkInputValue.bind(this));
+        const tHandler = debounced(200, this.bindInputEvent.bind(this));
         this.input.addEventListener("input", tHandler.bind(this));
 
         this.input.addEventListener("keydown", e => {
@@ -154,15 +154,15 @@ class Autocomplete {
                 }
 
                 const current = this.list.children[this.selectIndex];
-                if (current) {
-                    if (current.offsetTop < this.list.scrollTop) {
-                        this.list.scrollTop = current.offsetTop
-                    }
 
-                    if (current.offsetTop + current.offsetHeight > this.list.scrollTop + this.list.offsetHeight) {
-                        this.list.scrollTop = current.offsetTop + current.offsetHeight - this.list.offsetHeight
-                    }
+                if (current.offsetTop < this.list.scrollTop) {
+                    this.list.scrollTop = current.offsetTop
                 }
+
+                if (current.offsetTop + current.offsetHeight > this.list.scrollTop + this.list.offsetHeight) {
+                    this.list.scrollTop = current.offsetTop + current.offsetHeight - this.list.offsetHeight
+                }
+
 
                 if (e.key === "Enter") {
                     this.selectActive(this.input, this.list.children[this.selectIndex]);
@@ -193,6 +193,7 @@ class Autocomplete {
         document.addEventListener("click", e => {
             this.hideList();
         })
+
     }
 }
 

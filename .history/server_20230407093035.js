@@ -1,7 +1,7 @@
 const express = require('express')
 const app = express()
 const fs = require('fs');
-const port = 3333
+const port = 3000
 const bodyParser = require('body-parser')
 const cors = require('cors')
 
